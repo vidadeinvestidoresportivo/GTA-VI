@@ -137,6 +137,9 @@ def menu(parser: argparse.ArgumentParser) -> None:
                 return
         except ErroCanal as e:
             print(f"\n[!] {e}")
+        except ModuleNotFoundError as e:
+            print(f"\n[!] Biblioteca faltando: {e.name}. Feche e abra o iniciar.bat de novo "
+                  "(ele instala o que falta).")
         except KeyboardInterrupt:
             print("\nCancelado.")
 
