@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+# videos, audios e resultados ficam so no seu PC (sao grandes demais para o GitHub)
+projetos/*
+!projetos/.gitkeep
+tendencias/
