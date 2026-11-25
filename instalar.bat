@@ -6,37 +6,68 @@ echo   Instalando o Canal GTA
 echo ============================================
 echo.
 
-where py >nul 2>nul
-if %errorlevel%==0 (
-    set PY=py -3
-) else (
-    where python >nul 2>nul
-    if errorlevel 1 (
-        echo [!] Python nao encontrado.
-        echo     Instalando com o winget...
-        winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+rem --- Procura um Python que funcione de verdade.
+rem --- O "python" da Microsoft Store e so um atalho falso, por isso testamos rodando.
+set "PY="
+py -3 --version >nul 2>nul
+if not errorlevel 1 set "PY=py -3"
+if not defined PY (
+    python --version >nul 2>nul
+    if not errorlevel 1 set "PY=python"
+)
+if not defined PY (
+    if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+)
+
+if not defined PY (
+    echo O Python nao esta instalado. Instalando agora...
+    echo Se aparecer uma janela pedindo permissao, clique em SIM.
+    echo.
+    winget install -e --id Python.Python.3.12 --scope user --accept-package-agreements --accept-source-agreements
+    if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+        set "PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    ) else (
         echo.
-        echo Feche esta janela e rode o instalar.bat de novo.
+        echo [!] Nao consegui instalar o Python automaticamente.
+        echo     Baixe em https://www.python.org/downloads/
+        echo     Na instalacao, MARQUE a opcao "Add python.exe to PATH".
+        echo     Depois rode este instalar.bat de novo.
         pause
         exit /b 1
     )
-    set PY=python
 )
 
-if not exist .venv (
+echo Usando Python:
+"%PY%" --version 2>nul || %PY% --version
+echo.
+
+rem --- Apaga um ambiente quebrado de uma tentativa anterior
+if exist .venv if not exist .venv\Scripts\python.exe rmdir /s /q .venv
+
+if not exist .venv\Scripts\python.exe (
     echo Criando ambiente Python...
-    %PY% -m venv .venv
+    if exist "%PY%" (
+        "%PY%" -m venv .venv
+    ) else (
+        %PY% -m venv .venv
+    )
 )
-call .venv\Scripts\activate.bat
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+if not exist .venv\Scripts\python.exe (
+    echo [!] Nao consegui criar o ambiente Python. Veja a mensagem acima.
+    pause
+    exit /b 1
+)
+
+echo Instalando bibliotecas - pode levar alguns minutos...
+.venv\Scripts\python.exe -m pip install --upgrade pip
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 if errorlevel 1 (
     echo [!] Falha ao instalar as bibliotecas. Veja a mensagem acima.
     pause
     exit /b 1
 )
 
-where ffmpeg >nul 2>nul
+ffmpeg -version >nul 2>nul
 if errorlevel 1 (
     echo.
     echo Instalando o ffmpeg - editor de video...
